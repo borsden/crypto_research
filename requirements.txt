@@ -1,0 +1,12 @@
+python-dotenv~=1.0.0
+python-binance
+influxdb-client
+loguru
+jupyterlab
+notebook
+aiocsv
+motor
+statsmodels
+pandas-ta
+catboost
+scikit-learn

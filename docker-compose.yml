@@ -1,0 +1,77 @@
+version: '2'
+services:
+  influxdb:
+    image: influxdb:latest
+    ports:
+      - '8086:8086'
+    volumes:
+      - ./volumes/influxdb-storage:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_BUCKET=FUTURES
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_USERNAME}
+      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_USERNAME}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_TOKEN}
+      - INFLUXDB_HTTP_AUTH_ENABLED=true
+      - INFLUXD_SESSION_LENGTH=1440
+      - INFLUXD_SESSION_RENEW_DISABLED=true
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - '8500:3000'
+    volumes:
+      - ./volumes/grafana-storage:/var/lib/grafana
+      - ./configs/grafana/:/etc/grafana/provisioning
+    depends_on:
+      - influxdb
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./configs/prometheus:/etc/prometheus
+      - ./volumes/prometheus-storage:/prometheus
+    ports:
+      - '9090:9090'
+    depends_on:
+      - influxdb
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - '27017:27017'
+    volumes:
+      - ./volumes/mongodb-storage:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
+#
+#  zookeeper:
+#    image: confluentinc/cp-zookeeper:latest
+#    ports:
+#      - '2181:2181'
+#    environment:
+#      - ZOOKEEPER_CLIENT_PORT=2181
+#      - ZOOKEEPER_TICK_TIME=2000
+#    volumes:
+#      - ./volumes/zookeeper-storage:/var/lib/zookeeper
+#
+#  kafka:
+#    image: confluentinc/cp-kafka:latest
+#    ports:
+#      - '9092:9092'
+#    depends_on:
+#      - zookeeper
+#    environment:
+#      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+#      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+#      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+#      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+#      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+#    volumes:
+#      - ./volumes/kafka-storage:/var/lib/kafka
